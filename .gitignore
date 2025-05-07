@@ -1,0 +1,10 @@
+.env
+*.log
+venv/
+__pycache__/
+
+# Ignore all files in the logs directory
+logs/*
+
+requirements.txt
+

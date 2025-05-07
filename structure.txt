@@ -1,0 +1,118 @@
+maia/
+├── core/                          # Nucleo del sistema
+│   ├── __init__.py
+│   ├── agent_manager.py           # Gestore principale degli agenti
+│   ├── dispatcher.py              # Smista le richieste agli agenti appropriati
+│   ├── message_broker.py          # Gestisce la comunicazione tra agenti
+│   └── memory_manager.py          # Gestione dello stato e memoria conversazioni
+│
+├── agents/                        # Moduli per i sotto-agenti
+│   ├── __init__.py
+│   ├── base_agent.py              # Classe base per tutti gli agenti
+│   ├── weather_agent/             # Esempio di agente meteo
+│   │   ├── __init__.py
+│   │   ├── weather_agent.py
+│   │   └── utils.py
+│   ├── calendar_agent/            # Esempio di agente calendario
+│   │   ├── __init__.py
+│   │   ├── calendar_agent.py
+│   │   └── utils.py
+│   ├── search_agent/              # Agente per ricerche web
+│   │   ├── __init__.py
+│   │   ├── search_agent.py
+│   │   └── utils.py
+│   └── ... (altri agenti specializzati)
+│
+├── integrations/                  # Connettori per servizi esterni
+│   ├── __init__.py
+│   ├── openai_client.py           # Client per OpenAI API
+│   ├── anthropic_client.py        # Client per Claude API
+│   ├── database_client.py         # Client per il database
+│   ├── vector_store.py            # Gestione database vettoriale
+│   └── api_connectors/            # Connettori per API esterne
+│       ├── __init__.py
+│       ├── weather_api.py
+│       ├── google_calendar_api.py
+│       └── ... (altri connettori API)
+│
+├── api/                           # API per esporre MAIA
+│   ├── __init__.py
+│   ├── main.py                    # Entry point FastAPI/Flask
+│   ├── routers/                   # Endpoint API organizzati
+│   │   ├── __init__.py
+│   │   ├── chat.py                # Endpoint per interazione conversazionale
+│   │   ├── agents.py              # Gestione degli agenti
+│   │   └── admin.py               # Funzioni amministrative
+│   └── middleware/                # Middleware API
+│       ├── __init__.py
+│       ├── auth.py                # Autenticazione
+│       └── rate_limiter.py        # Limitazione delle richieste
+│
+├── utils/                         # Utilità condivise
+│   ├── __init__.py
+│   ├── logger.py                  # Sistema di logging
+│   ├── config.py                  # Configurazioni
+│   └── tools.py                   # Funzioni di utilità generiche
+│
+├── models/                        # Modelli dati e schema
+│   ├── __init__.py
+│   ├── message.py                 # Schema messaggi
+│   ├── user.py                    # Schema utenti
+│   └── task.py                    # Schema task
+│
+├── data/                          # Dati e risorse
+│   ├── prompts/                   # Template prompt per LLM
+│   │   ├── main_agent_prompts.py
+│   │   └── specialized_prompts/
+│   │       ├── weather_prompts.py
+│   │       └── ... (altri template)
+│   └── embeddings/                # Storage per embedding
+│
+├── workers/                       # Lavoratori asincroni
+│   ├── __init__.py
+│   ├── celery_app.py              # Configurazione Celery
+│   └── tasks/                     # Task asincroni
+│       ├── __init__.py
+│       ├── llm_tasks.py           # Task per chiamate LLM
+│       └── api_tasks.py           # Task per chiamate API
+│
+├── tests/                         # Test unitari e d'integrazione
+│   ├── __init__.py
+│   ├── test_core/
+│   ├── test_agents/
+│   └── test_api/
+│
+├── frontend/                      # Frontend (opzionale)
+│   ├── public/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   └── App.tsx
+│   ├── package.json
+│   └── tsconfig.json
+│
+├── docker/                        # File Docker
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   └── .dockerignore
+│
+├── config/                        # File di configurazione
+│   ├── settings.py                # Impostazioni generali
+│   ├── development.env            # Variabili d'ambiente sviluppo
+│   └── production.env             # Variabili d'ambiente produzione
+│
+├── scripts/                       # Script di utilità
+│   ├── setup.sh                   # Script di setup iniziale
+│   └── deploy.sh                  # Script di deployment
+│
+├── docs/                          # Documentazione
+│   ├── architecture.md            # Diagramma dell'architettura
+│   ├── agent_development.md       # Guida per sviluppare nuovi agenti
+│   └── api_reference.md           # Riferimento API
+│
+├── requirements.txt               # Dipendenze Python
+├── .env.example                   # Template per file .env
+├── .gitignore                     # File ignorati da git
+├── README.md                      # Documentazione principale
+└── setup.py                       # Script di installazione
