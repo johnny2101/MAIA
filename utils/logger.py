@@ -48,7 +48,7 @@ class Logger:
             
             # Create formatter for file handler
             file_formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - [%(classname)s] - %(message)s'
+                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
             )
             file_handler.setFormatter(file_formatter)
             
