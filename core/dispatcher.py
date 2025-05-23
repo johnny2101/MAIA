@@ -59,9 +59,6 @@ class Dispatcher:
             
             self._message_publisher.publish("user.message.processed", json.dumps(payload))
 
-            with open("response.json", "w") as f:
-                f.write(str(response))
-
         try:
             self._message_consumer.subscribe(topic, user_message_callback)
         except Exception as e:
