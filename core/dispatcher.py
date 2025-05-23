@@ -4,6 +4,7 @@ from typing import Dict, List, Any, Tuple
 from integrations.gemma import Google_Gemini_Integration
 from data.prompts.dispatcher_prompts import DispatcherPrompts
 from core.message_broker2 import MessageBroker
+from core.message_broker import MessageConsumer, MessagePublisher
 
 class Dispatcher:
     """
@@ -25,8 +26,9 @@ class Dispatcher:
             'password': 'password',
             'virtual_host': '/'
         }
-        self._message_broker = MessageBroker(message_broker_config)
-        if not self._message_broker.connect():
+        self._message_publisher = MessagePublisher(message_broker_config)
+        self._message_consumer = MessageConsumer(message_broker_config)
+        if not self._message_consumer.connect() or not self._message_publisher.connect():
             print("Failed to connect to RabbitMQ")
             exit(1)
 
@@ -46,11 +48,8 @@ class Dispatcher:
             
             payload = json.loads(body.decode())
             payload = json.loads(payload)
-            print(f"Received message: {type(payload)}")
-            print(f"Received message: {payload}")
             chat_id = payload.get("chat_id")
             response_text = payload.get("text", "no message found")
-            self._message_broker.publish("User.log.info", response_text)
             response = self.analyze_request(response_text)
             
             payload = {
@@ -58,41 +57,30 @@ class Dispatcher:
                 "text": response,
             }
             
-            self._message_broker.publish("user.message.processed", json.dumps(payload))
+            self._message_publisher.publish("user.message.processed", json.dumps(payload))
 
             with open("response.json", "w") as f:
                 f.write(str(response))
 
         try:
-            self._message_broker.subscribe(topic, user_message_callback)
+            self._message_consumer.subscribe(topic, user_message_callback)
         except Exception as e:
-            print(f"[Dispatcher] Error while listening to messages: {e}")
-
-
-    def start_listening(self):
-        """
-        Avvia il thread per ascoltare i messaggi degli utenti.
-        """
-        if self._listener_thread is None or not self._listener_thread.is_alive():
-            self._stop_event.clear()
-            self._listener_thread = threading.Thread(target=self._listen_to_user_messages, daemon=True)
-            self._listener_thread.start()
-            print("Dispatcher listening thread started.")
+            self._message_publisher.publish("dispatcher.log.error", f"Error while listening to messages: {e}")
 
     def stop_listening(self):
         """
         Ferma l'ascolto dei messaggi utente.
         """
         self._stop_event.set()
-        self._message_broker.disconnect()  # Assicurati che il tuo MessageBroker abbia questa funzione
+        self._message_publisher.disconnect()
+        self._message_consumer.disconnect()
         if self._listener_thread:
             self._listener_thread.join()
             print("Dispatcher listening thread stopped.")
 
     def analyze_request(self, message: Dict[str, Any]) -> Dict[str, Any]:
-        print(f"ready to analyze {message}")
         response = self._gemini.send_message_with_system_instruction(self._prompts, message)
-        self._message_broker.publish("dispatcher.log.info", response)
+        self._message_publisher.publish("dispatcher.log.info", response)
         return response
 
     def detect_intent(self, message: Dict[str, Any]) -> str:

@@ -5,6 +5,11 @@ from logging.handlers import RotatingFileHandler
 from datetime import datetime
 from typing import Optional, Dict
 
+class ClassNameInjector(logging.Filter):
+    def filter(self, record):
+        if not hasattr(record, 'classname'):
+            record.classname = 'N/A'
+        return True
 class Logger:
     _instance: Optional['Logger'] = None
     
@@ -15,19 +20,20 @@ class Logger:
         return cls._instance
     
     def _initialize_logger(self):
-        """Initialize the logger with file rotation and console handlers."""
+        print("Initializing logger...")
         self.logger = logging.getLogger('MAIA')
         self.logger.setLevel(logging.DEBUG)
+        self.logger.propagate = False
         
-        # Create logs directory if it doesn't exist
+        if self.logger.hasHandlers():
+            print("Logger already has handlers.")
+            return
+
+        # Directory log
         log_dir = 'logs'
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
-        
-        # Generate timestamp for log files
+        os.makedirs(log_dir, exist_ok=True)
         timestamp = datetime.now().strftime('%Y%m%d')
-        
-        # Define log levels and their corresponding file names
+
         log_levels = {
             logging.DEBUG: f'maia_debug_{timestamp}.log',
             logging.INFO: f'maia_info_{timestamp}.log',
@@ -35,38 +41,30 @@ class Logger:
             logging.ERROR: f'maia_error_{timestamp}.log',
             logging.CRITICAL: f'maia_critical_{timestamp}.log'
         }
-        
-        # Create handlers for each log level
+
+        log_format = '%(asctime)s - %(name)s - %(levelname)s - [%(classname)s] - %(message)s'
+
+        # Handlers file
         for level, filename in log_levels.items():
             file_handler = RotatingFileHandler(
                 os.path.join(log_dir, filename),
-                maxBytes=10*1024*1024,  # 10MB
+                maxBytes=10 * 1024 * 1024,
                 backupCount=5,
                 encoding='utf-8'
             )
             file_handler.setLevel(level)
-            
-            # Create formatter for file handler
-            file_formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-            )
-            file_handler.setFormatter(file_formatter)
-            
-            # Add filter to only log messages of this level
-            file_handler.addFilter(lambda record, level=level: record.levelno == level)
-            
-            # Add handler to logger
+            file_handler.setFormatter(logging.Formatter(log_format))
+            file_handler.addFilter(ClassNameInjector())
             self.logger.addHandler(file_handler)
-        
-        # Console handler for all levels
+
+        # Handler console
         console_handler = logging.StreamHandler()
         console_handler.setLevel(logging.INFO)
-        console_formatter = logging.Formatter(
-            '%(asctime)s - %(levelname)s - [%(classname)s] - %(message)s'
-        )
-        console_handler.setFormatter(console_formatter)
+        console_handler.setFormatter(logging.Formatter(log_format))
+        console_handler.addFilter(ClassNameInjector())
         self.logger.addHandler(console_handler)
-    
+        
+        
     def _get_caller_class(self) -> str:
         """Get the name of the class that called the logger."""
         frame = inspect.currentframe()
@@ -80,30 +78,30 @@ class Logger:
         finally:
             del frame
     
-    def _log(self, level: int, message: str):
+    def _log(self, level: int, message: str, sender: str):
         """Internal logging method that adds class name to the log record."""
-        extra = {'classname': self._get_caller_class()}
+        extra = {'classname': sender}
         self.logger.log(level, message, extra=extra)
     
-    def debug(self, message: str):
+    def debug(self, message: str, sender: str):
         """Log a debug message."""
-        self._log(logging.DEBUG, message)
+        self._log(logging.DEBUG, message, sender)
     
-    def info(self, message: str):
+    def info(self, message: str, sender: str):
         """Log an info message."""
-        self._log(logging.INFO, message)
+        self._log(logging.INFO, message, sender)
     
-    def warning(self, message: str):
+    def warning(self, message: str, sender: str):
         """Log a warning message."""
-        self._log(logging.WARNING, message)
+        self._log(logging.WARNING, message, sender)
     
-    def error(self, message: str):
+    def error(self, message: str, sender: str):
         """Log an error message."""
-        self._log(logging.ERROR, message)
+        self._log(logging.ERROR, message, sender)
     
-    def critical(self, message: str):
+    def critical(self, message: str, sender: str):
         """Log a critical message."""
-        self._log(logging.CRITICAL, message)
+        self._log(logging.CRITICAL, message, sender)
 
 # Example usage
 if __name__ == "__main__":

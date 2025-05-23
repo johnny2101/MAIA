@@ -8,7 +8,7 @@ if __name__ == "__main__":
     stop_event = threading.Event()
 
     try:
-        dispatcher.start_listening()
+        dispatcher._listen_to_user_messages()
         print("Listening... Press Ctrl+C to stop.")
         stop_event.wait()  # Aspetta finché non viene interrotto
     except KeyboardInterrupt:

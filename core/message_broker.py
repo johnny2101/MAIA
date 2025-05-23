@@ -14,6 +14,8 @@ from pika.exceptions import AMQPConnectionError, AMQPChannelError, ConnectionClo
 import sys
 from utils.logger import Logger
 
+logger = Logger()
+
 
 class MessagePublisher:
     """Classe dedicata alla pubblicazione di messaggi su RabbitMQ."""
@@ -75,15 +77,17 @@ class MessagePublisher:
                 durable=True
             )
             
-            print(f"Publisher connected to RabbitMQ at {self._config.get('host', 'localhost')}:{self._config.get('port', 5672)}")
+            
+            logger.info(f"Publisher connected to RabbitMQ at {self._config.get('host', 'localhost')}:{self._config.get('port', 5672)}", "MessagePublisher")
             return True
         
         except AMQPConnectionError as e:
-            print(f"Failed to connect to RabbitMQ: {e}")
+            logger.error(f"Failed to connect publisher to RabbitMQ: {e}", "MessagePublisher")
             return False
         
         except Exception as e:
-            print(f"Unexpected error connecting to RabbitMQ: {e}")
+            
+            logger.error(f"Unexpected error connecting to RabbitMQ: {e}", "MessagePublisher")
             return False
 
     def disconnect(self) -> None:
@@ -91,14 +95,16 @@ class MessagePublisher:
         Chiude la connessione al message broker.
         """
         self._stopping = True
-        print("Disconnecting Publisher from RabbitMQ")
+        
+        logger.info("Disconnecting Publisher from RabbitMQ", "MessagePublisher")
         
         # Chiude il canale
         if self._channel and self._channel.is_open:
             try:
                 self._channel.close()
             except Exception as e:
-                print(f"Error closing publisher channel: {e}")
+                
+                logger.error(f"Error closing publisher channel: {e}", "MessagePublisher")
             finally:
                 self._channel = None
         
@@ -107,7 +113,8 @@ class MessagePublisher:
             try:
                 self._connection.close()
             except Exception as e:
-                print(f"Error closing publisher connection: {e}")
+                
+                logger.error(f"Error closing publisher connection: {e}", "MessagePublisher")
             finally:
                 self._connection = None
 
@@ -126,11 +133,11 @@ class MessagePublisher:
             return True
         
         try:
-            print("Ensuring publisher connection to RabbitMQ by reconnecting")
             self.disconnect()
             return self.connect()
         except Exception as e:
-            print(f"Error ensuring publisher connection: {e}")
+            
+            logger.error(f"Error ensuring publisher connection: {e}", "MessagePublisher")
             return False
 
     def publish(self, topic: str, message: Dict[str, Any]) -> bool:
@@ -145,13 +152,13 @@ class MessagePublisher:
             True se la pubblicazione ha avuto successo
         """
         if not self._ensure_connection():
-            print("Publisher: Failed to ensure connection")
+            
+            logger.error("Publisher: Failed to ensure connection", "MessagePublisher")
             return False
         
         try:
             # Prepara il corpo del messaggio
             message_body = json.dumps(message)
-            print(f"Publishing message to {topic}: {message_body}")
             
             # Pubblica il messaggio
             self._channel.basic_publish(
@@ -167,12 +174,13 @@ class MessagePublisher:
             return True
             
         except AMQPChannelError as e:
-            print(f"Channel error publishing to {topic}: {e}")
+            
+            logger.error(f"Channel error publishing to {topic}: {e}", "MessagePublisher")
             return False
             
         except Exception as e:
-            print(f"Error publishing to {topic}: {e}")
-            traceback.print_exc()
+            
+            logger.error(f"Error publishing to {topic}: {e}", "MessagePublisher")
             return False
 
 
@@ -231,22 +239,25 @@ class MessageConsumer:
                 durable=True
             )
             
-            print(f"Consumer connected to RabbitMQ at {self._config.get('host', 'localhost')}:{self._config.get('port', 5672)}")
+            
+            logger.info(f"Consumer connected to RabbitMQ at {self._config.get('host', 'localhost')}:{self._config.get('port', 5672)}", "MessageConsumer")
             return True
         
         except AMQPConnectionError as e:
-            print(f"Failed to connect consumer to RabbitMQ: {e}")
+            logger.error(f"Failed to connect consumer to RabbitMQ: {e}", "MessageConsumer")
             return False
         
         except Exception as e:
-            print(f"Unexpected error connecting consumer to RabbitMQ: {e}")
+            
+            logger.error(f"Unexpected error connecting consumer to RabbitMQ: {e}", "MessageConsumer")
             return False
 
     def disconnect(self) -> None:
         """
         Chiude la connessione al message broker.
         """
-        print("Disconnecting Consumer from RabbitMQ")
+        
+        logger.info("Disconnecting Consumer from RabbitMQ", "MessageConsumer")
         self._stopping = True
         
         # Ferma il consumo di messaggi
@@ -255,9 +266,9 @@ class MessageConsumer:
                 if self._channel.is_open:
                     self._channel.stop_consuming()
             except (ConnectionClosed, ChannelClosedByBroker, StreamLostError, IndexError) as e:
-                print(f"Gracefully handled stop_consuming error: {e.__class__.__name__} - {e}")
+                logger.error(f"Error stopping consumption: {e}", "MessageConsumer")
             except Exception as e:
-                print(f"Unexpected error stopping consumption: {e}")
+                logger.error(f"Unexpected error stopping consumption: {e}", "MessageConsumer")
         
         # Attende che il thread del consumer si fermi
         if self._consumer_thread and self._consumer_thread.is_alive():
@@ -268,7 +279,8 @@ class MessageConsumer:
             try:
                 self._channel.close()
             except Exception as e:
-                print(f"Error closing consumer channel: {e}")
+                
+                logger.error(f"Error closing consumer channel: {e}", "MessageConsumer")
             finally:
                 self._channel = None
         
@@ -277,7 +289,8 @@ class MessageConsumer:
             try:
                 self._connection.close()
             except Exception as e:
-                print(f"Error closing consumer connection: {e}")
+                
+                logger.error(f"Error closing consumer connection: {e}", "MessageConsumer")
             finally:
                 self._connection = None
 
@@ -296,11 +309,11 @@ class MessageConsumer:
             return True
         
         try:
-            print("Ensuring consumer connection to RabbitMQ by reconnecting")
             self.disconnect()
             return self.connect()
         except Exception as e:
-            print(f"Error ensuring consumer connection: {e}")
+            
+            logger.error(f"Error ensuring consumer connection: {e}", "MessageConsumer")
             return False
 
     def _declare_queue(self, queue_name: str, topic: str) -> bool:
@@ -326,7 +339,8 @@ class MessageConsumer:
             )
             actual_queue_name = queue_result.method.queue
             
-            print(f"Consumer queue name: {actual_queue_name} topic: {topic}")
+            
+            logger.info(f"Consumer queue name: {actual_queue_name} topic: {topic}", "MessageConsumer")
             
             # Lega la coda all'exchange con il routing key (topic)
             self._channel.queue_bind(
@@ -339,35 +353,9 @@ class MessageConsumer:
             return True
             
         except Exception as e:
-            print(f"Error declaring queue {queue_name} for topic {topic}: {e}")
-            return False
-
-    def _message_handler_wrapper(self, callback: Callable[[Dict[str, Any]], None]):
-        """
-        Wrapper per gestire i messaggi ricevuti.
-        
-        Args:
-            callback: Funzione callback originale
             
-        Returns:
-            Funzione wrapper per pika
-        """
-        def wrapper(ch, method, properties, body):
-            try:
-                # Decodifica il messaggio JSON
-                message = json.loads(body.decode('utf-8'))
-                print(f"Received message: {message}")
-                
-                # Chiama la callback dell'utente
-                callback(message)
-                
-            except json.JSONDecodeError as e:
-                print(f"Error decoding JSON message: {e}")
-            except Exception as e:
-                print(f"Error in message callback: {e}")
-                traceback.print_exc()
-        
-        return wrapper
+            logger.error(f"Error declaring queue {queue_name} for topic {topic}: {e}", "MessageConsumer")
+            return False
 
     def subscribe(self, topic: str, callback: Callable[[Dict[str, Any]], None]) -> str:
         """
@@ -388,7 +376,6 @@ class MessageConsumer:
         
         # Crea un nome di coda univoco per questa sottoscrizione
         queue_name = f"maia.{topic.replace('.', '_').replace('*', 'star').replace('#', 'hash')}.{subscription_id[:8]}"
-        print(f"Consumer queue name: {queue_name}")
         
         # Dichiara la coda e la lega al topic
         if not self._declare_queue(queue_name, topic):
@@ -396,8 +383,6 @@ class MessageConsumer:
                 
         # Imposta il consumatore per la coda
         try:
-            print("Consumer ready to consume")
-            wrapped_callback = self._message_handler_wrapper(callback)
             
             self._channel.basic_consume(
                 queue=queue_name,
@@ -410,13 +395,11 @@ class MessageConsumer:
                 self._start_consuming()
                 
         except Exception as e:
-            print(f"Error setting up consumer for queue {queue_name}: {e}")
+            logger.error(f"Error setting up consumer for queue {queue_name}: {e}", "MessageConsumer")
             raise RuntimeError(f"Failed to set up consumer for topic {topic}")
         
         # Memorizza la sottoscrizione
         self._subscribers[subscription_id] = (topic, callback, queue_name)
-        
-        print(f"Subscribed to {topic} with ID {subscription_id}")
         return subscription_id
 
     def unsubscribe(self, subscription_id: str) -> bool:
@@ -430,11 +413,13 @@ class MessageConsumer:
             True se l'annullamento ha avuto successo
         """
         if subscription_id not in self._subscribers:
-            print(f"Subscription {subscription_id} not found")
+            
+            logger.error(f"Subscription {subscription_id} not found", "MessageConsumer")
             return False
         
         if not self._ensure_connection():
-            print("Consumer not connected to RabbitMQ")
+            
+            logger.error("Consumer not connected to RabbitMQ", "MessageConsumer")
             return False
         
         try:
@@ -450,11 +435,13 @@ class MessageConsumer:
             # Rimuove la sottoscrizione dalla lista
             del self._subscribers[subscription_id]
             
-            print(f"Unsubscribed from {subscription_id}")
+            
+            logger.info(f"Unsubscribed from {subscription_id}", "MessageConsumer")
             return True
             
         except Exception as e:
-            print(f"Error unsubscribing from {subscription_id}: {e}")
+            
+            logger.error(f"Error unsubscribing from {subscription_id}: {e}", "MessageConsumer")
             return False
 
     def _start_consuming(self) -> None:
@@ -469,19 +456,17 @@ class MessageConsumer:
                 if self._ensure_connection():
                     try:
                         self._consuming = True
-                        print("Consumer starting to consume messages")
                         self._channel.start_consuming()
                     except AMQPConnectionError:
-                        print("Consumer: AMQP Connection error, retrying in 5 seconds")
+                        logger.error("Consumer: AMQP Connection error, retrying in 5 seconds", "MessageConsumer")
                         time.sleep(5)
                     except Exception as e:
-                        print(f"Consumer: Error in consuming thread: {e}")
-                        traceback.print_exc()
+                        logger.error(f"Consumer: Error in consuming thread: {e}", "MessageConsumer")
                         time.sleep(1)
                     finally:
                         self._consuming = False
                 else:
-                    print("Consumer: Failed to ensure connection, retrying in 5 seconds")
+                    logger.error("Consumer: Failed to ensure connection, retrying in 5 seconds", "MessageConsumer")
                     time.sleep(5)
                     
         self._consumer_thread = threading.Thread(target=consumer_thread, daemon=True)
@@ -509,11 +494,10 @@ class MessageConsumer:
             )
             
             self._declared_queues.add(queue_name)
-            print(f"Created queue {queue_name}")
             return True
             
         except Exception as e:
-            print(f"Error creating queue {queue_name}: {e}")
+            logger.error(f"Error creating queue {queue_name}: {e}", "MessageConsumer")
             return False
 
 
@@ -534,11 +518,11 @@ if __name__ == "__main__":
     
     # Connetti entrambi
     if publisher.connect() and consumer.connect():
-        print("Both publisher and consumer connected successfully")
+        
         
         # Esempio di callback per i messaggi ricevuti
         def message_callback(ch, method, properties, body):
-            print(f"Received: {body.decode('utf-8')}")
+            print(f"Received message: {body.decode()}")
         
         # Sottoscrivi a un topic
         subscription_id = consumer.subscribe("test.topic", message_callback)
