@@ -41,23 +41,34 @@ class Dispatcher:
         """
         topic = "user.message.new"
 
-        def user_message_callback(ch, method, properties, body):
-            if self._stop_event.is_set():
-                ch.stop_consuming()
-                return
-            
-            payload = json.loads(body.decode())
-            payload = json.loads(payload)
-            chat_id = payload.get("chat_id")
-            response_text = payload.get("text", "no message found")
-            response = self.analyze_request(response_text)
-            
-            payload = {
-                "chat_id": chat_id,
-                "text": response,
-            }
-            
-            self._message_publisher.publish("user.message.processed", json.dumps(payload))
+        def user_message_callback(**kwargs):
+                try:
+                    ch, method, properties, body = kwargs['ch'], kwargs['method'], kwargs['properties'], kwargs['body']
+                except KeyError as e:
+                    print(f"Error unpacking message: {e}")
+                    return
+                if self._stop_event.is_set():
+                    ch.stop_consuming()
+                    return
+                
+                payload = json.loads(body.decode())
+                payload = json.loads(payload)
+                chat_id = payload.get("chat_id")
+                response_text = payload.get("text", "no message found")
+                response = self.analyze_request(response_text)
+                
+                selected_agents = self.route_request(response)
+                
+                #self._message_publisher.publish("dispatcher.log.info", f"Selected agents: {selected_agents}")
+                self._message_publisher.publish(f"agent.{selected_agents}.request", response)
+                
+                
+                payload = {
+                    "chat_id": chat_id,
+                    "text": response,
+                }
+                
+                self._message_publisher.publish("user.message.processed", json.dumps(payload))
 
         try:
             self._message_consumer.subscribe(topic, user_message_callback)
@@ -78,13 +89,29 @@ class Dispatcher:
     def analyze_request(self, message: Dict[str, Any]) -> Dict[str, Any]:
         response = self._gemini.send_message_with_system_instruction(self._prompts, message)
         self._message_publisher.publish("dispatcher.log.info", response)
-        return response
+        return json.loads(response)
 
     def detect_intent(self, message: Dict[str, Any]) -> str:
         pass
 
     def route_request(self, message: Dict[str, Any]) -> List[str]:
-        pass
+        """
+        Inoltra la richiesta agli agenti appropriati in base all'intento e alle entità rilevate.
+        
+        Args:
+            message (Dict[str, Any]): Il messaggio da inoltrare.
+        
+        Returns:
+            List[str]: Lista degli agenti selezionati per gestire la richiesta.
+        """
+        primary_intent = self.detect_intent(message)
+        selected_agents = message.get("selected_agent", [])
+        
+        if not selected_agents:
+            fallback_agent = self.fallback_strategy(message)
+            selected_agents.append(fallback_agent)
+        
+        return selected_agents
 
     def dispatch(self, message: Dict[str, Any]) -> Tuple[List[str], Dict[str, Any]]:
         pass

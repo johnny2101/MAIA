@@ -37,7 +37,7 @@ The following specialized agents are currently available in the system:
 
 - **WeatherAgent**: Handles weather forecasts, current conditions, and weather-related advice
 - **CalendarAgent**: Manages scheduling, reminders, appointments, and event organization
-- **SearchAgent**: Performs web searches and information retrieval on general topics
+- **WebAgent**: Performs web searches and information retrieval on general topics
 - [Additional agents as they are implemented]
 
 ## Classification Guidelines

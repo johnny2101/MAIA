@@ -33,12 +33,15 @@ class Google_Gemini_Integration:
                 ),
             contents=message
         )'''
-        print(f"message: {message}")
         response = self.client.models.generate_content(
             model=self.model,
             contents=system_instruction + message
         )
-        return extract_first_code(response.text).context
+        try:
+            return extract_first_code(response.text).context
+        except Exception as e:
+            #print(f"Error extracting code: {e}")
+            return response.text
       
     def generate_image(self, contents):
         response = self.client.models.generate_content(

@@ -26,7 +26,13 @@ class AgentManager:
             agent_name: Nome identificativo dell'agente
             agent_class: Classe dell'agente da registrare
         """
-        pass
+        if not issubclass(agent_class, BaseAgent):
+            raise ValueError(f"La classe {agent_class.__name__} non è un sottotipo di BaseAgent")
+        if agent_name in self._agents:
+            raise ValueError(f"L'agente {agent_name} è già registrato")
+        self._agents[agent_name] = object.__new__(agent_class)
+        print(f"Agente {agent_name} registrato con successo.")
+        
     
     def initialize_agent(self, agent_name: str, **kwargs) -> BaseAgent:
         """

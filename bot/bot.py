@@ -6,7 +6,8 @@ import telebot
 from core.message_broker import MessageConsumer, MessagePublisher
 import threading
 
-BOT_TOKEN = os.environ.get('TELEGRAM_BOT')
+#BOT_TOKEN = os.environ.get('TELEGRAM_BOT')
+BOT_TOKEN = "7154713347:AAG2MzuvFwT0JUNlvaOEVZ9bosj0ZWwEP4U"
 
 input_topic = "user.message.new"
 output_topic = "user.message.processed"
@@ -33,7 +34,12 @@ def listen_to_user_messages():
     Sottoscrive ai messaggi utente e gestisce i messaggi ricevuti.
     """
 
-    def user_message_callback(ch, method, properties, body):
+    def user_message_callback(**kwargs):
+        try:
+            ch, method, properties, body = kwargs['ch'], kwargs['method'], kwargs['properties'], kwargs['body']
+        except KeyError as e:
+            message_publisher.publish("Bot.log.error", f"[Bot] Error unpacking message: {e}")
+            return
         
         if stop_event.is_set():
             ch.stop_consuming()
@@ -73,7 +79,9 @@ def handle_text_message(message):
         'chat_id': message.chat.id,
         'text': message.text
     }
+    print(f"Received message: {payload}")
     message_publisher.publish(input_topic, json.dumps(payload))
+    #message_publisher.publish("Bot.log.info", json.dumps(payload))
     
 
 try:

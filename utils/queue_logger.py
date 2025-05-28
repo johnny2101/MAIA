@@ -3,7 +3,9 @@ import os
 import inspect
 from logging.handlers import RotatingFileHandler
 from datetime import datetime
+import time
 from typing import Optional
+from core.message_broker import MessageConsumer
 from core.message_broker2 import MessageBroker
 
 
@@ -25,7 +27,7 @@ class QueueLogger:
     def _initialize_logger(self):
         print("Initializing logger...")
         self.logger = logging.getLogger('MAIA')
-        self.logger.setLevel(logging.DEBUG)
+        self.logger.setLevel(logging.INFO)
         self.logger.propagate = False
         
         # Config RabbitMQ
@@ -36,7 +38,7 @@ class QueueLogger:
             'password': 'password',
             'virtual_host': '/'
         }
-        self.message_broker = MessageBroker(message_broker_config)
+        self.message_broker = MessageConsumer(message_broker_config)
 
         if self.logger.hasHandlers():
             print("Logger already has handlers.")
@@ -98,8 +100,15 @@ class QueueLogger:
 
     def auto_log(self):
         self.message_broker.connect()
+        print("QueueLogger: Subscribing to messages...")
 
-        def log_everything(ch, method, properties, body):
+        def log_everything(**kwargs):
+            print("QueueLogger: Received a message")
+            try:
+                method, properties, body = kwargs['method'], kwargs['properties'], kwargs['body']
+            except KeyError as e:
+                print('QueueLogger', f'Error unpacking message: {e}')
+                return
             try:
                 sender = method.routing_key.split('.')[0]
                 severity = method.routing_key.split('.')[-1]
@@ -131,6 +140,8 @@ if __name__ == "__main__":
 
         def test_logging(self):
             self.logger.auto_log()
+            while True:
+                time.sleep(1)
     
     test = TestClass()
     test.test_logging()

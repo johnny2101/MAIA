@@ -22,7 +22,7 @@ class Logger:
     def _initialize_logger(self):
         print("Initializing logger...")
         self.logger = logging.getLogger('MAIA')
-        self.logger.setLevel(logging.DEBUG)
+        self.logger.setLevel(logging.INFO)
         self.logger.propagate = False
         
         if self.logger.hasHandlers():

@@ -159,6 +159,7 @@ class MessagePublisher:
         try:
             # Prepara il corpo del messaggio
             message_body = json.dumps(message)
+            print(f"Publishing message to {topic}: {message}", "MessagePublisher")
             
             # Pubblica il messaggio
             self._channel.basic_publish(
@@ -309,7 +310,7 @@ class MessageConsumer:
             return True
         
         try:
-            self.disconnect()
+            #self.disconnect()
             return self.connect()
         except Exception as e:
             
@@ -328,6 +329,7 @@ class MessageConsumer:
             True se la dichiarazione ha avuto successo
         """
         if not self._ensure_connection():
+            logger.error("Consumer not connected to RabbitMQ", "MessageConsumer2")
             return False
             
         try:
@@ -358,6 +360,7 @@ class MessageConsumer:
             return False
 
     def subscribe(self, topic: str, callback: Callable[[Dict[str, Any]], None]) -> str:
+        
         """
         Sottoscrive a un topic specifico.
         
@@ -379,17 +382,32 @@ class MessageConsumer:
         
         # Dichiara la coda e la lega al topic
         if not self._declare_queue(queue_name, topic):
+            logger.error(f"Failed to declare queue for topic {topic}", "MessageConsumer")
             raise RuntimeError(f"Failed to declare queue for topic {topic}")
+        
+        logger.info(f"Subscribed to topic {topic} with queue {queue_name}", "MessageConsumer")
+        # callback wrapper per gestire i messaggi
+        def message_callback(ch, method, properties, body):
+            try:
+                # Decodifica il corpo del messaggio
+                message = json.loads(body.decode('utf-8'))
+                # Chiama il callback originale
+                callback(ch=ch, method=method, properties=properties, body=body)
+            except json.JSONDecodeError as e:
+                print(f"Error decoding message: {e}", "MessageConsumer")
+                logger.error(f"Failed to decode message: {e}", "MessageConsumer")
+            except Exception as e:
+                print(f"Error in message callback: {e}", "MessageConsumer")
+                logger.error(f"Error in message callback: {e}", "MessageConsumer")
                 
         # Imposta il consumatore per la coda
         try:
-            
             self._channel.basic_consume(
                 queue=queue_name,
-                on_message_callback=callback,
+                on_message_callback=message_callback,
                 auto_ack=True
             )
-            
+            print(f"Consumer set up for queue {queue_name} on topic {topic}", "MessageConsumer2")
             # Avvia il consumo se non è già attivo
             if not self._consuming:
                 self._start_consuming()
@@ -520,21 +538,29 @@ if __name__ == "__main__":
     if publisher.connect() and consumer.connect():
         
         
-        # Esempio di callback per i messaggi ricevuti
-        def message_callback(ch, method, properties, body):
-            print(f"Received message: {body.decode()}")
+        def message_callback(**kwargs):
+            """
+            Callback per gestire i messaggi ricevuti.
+            Args:
+                kwargs: Contiene il metodo, le proprietà e il messaggio decodificato
+            """
+            method = kwargs.get('method')
+            properties = kwargs.get('properties')
+            message = kwargs.get('message')
+            
+            logger.info(f"Received message on topic {method.routing_key}: {message}", "MessageConsumer")
         
         # Sottoscrivi a un topic
-        subscription_id = consumer.subscribe("test.topic", message_callback)
+        #subscription_id = consumer.subscribe("test.topic", message_callback)
         
         # Pubblica un messaggio
-        publisher.publish("test.topic", {"message": "Hello World!"})
+        publisher.publish("agent.WebAgent.request", {"message": "Hello World!"})
         
         # Mantieni il programma in esecuzione per un po'
         time.sleep(5)
         
         # Cleanup
-        consumer.unsubscribe(subscription_id)
+        #consumer.unsubscribe(subscription_id)
         consumer.disconnect()
         publisher.disconnect()
     else:
