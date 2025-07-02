@@ -1,5 +1,6 @@
 import json
 import time
+import traceback
 from agents.base_agent import BaseAgent, AgentCapability
 from integrations.search_engine import WebResearchAssistant
 from data.prompts.specialized_prompts.web_agent_prompts import WebAgentPrompts
@@ -39,46 +40,51 @@ class WebAgent(BaseAgent):
         :param message: Il messaggio da elaborare.
         :return: Risposta elaborata.
         """
-        # Implementa la logica per processare la richiesta
-        # Ad esempio, effettuare una ricerca su Google e restituire i risultati
-        #print( f"Elaborazione della richiesta: {message}")
-        context = message.get("context_to_forward", "cosa vuol dire flamingo?")
-        print(f"Context to forward: {context}")
-        #self.web_research_integration.research_topic(message.get("context_to_forward", "cosa vuol dire flamingo"))
         try:
-            prompt = self.prompts.get_web_search_prompt().format(context)
-        except KeyError as e:
-            print(f"Error retrieving prompt: {e}")
-            return "Error retrieving prompt"
-        #save prompt to file 
-        with open("web_search_prompt.txt", "w") as file:
-            file.write(prompt)
-        search_query = json.loads(self.qwery_llm(prompt,""))
-        query = search_query.get("query", "cosa vuol dire flamingo?")
-        print(f"Search query: {query}")
-        research_results = self.web_research_integration.research_topic(query, num_sources=1)
-        #print(f"Research results type: {type(research_results)} - length: {len(research_results)}\n {research_results}")
-        useful_results = []
-        for result in research_results["sources"]:
-            content = result["content"]
-            prompt = self.prompts.get_content_filtering_prompt().format(context, content)
-            is_content_useful = json.loads(self.qwery_llm(prompt, "")).get("is_useful", False)
-            if content and is_content_useful:
-                useful_results.append(content)
-        
-        print(f"Useful results: {useful_results}")
-        
-        summary_prompt = self.prompts.get_web_analysis_prompt().format(context, useful_results)
-        
-        final_response = self.qwery_llm(summary_prompt, "")
-        print(f"Final response: {final_response}")
-        payload = {
-                    "chat_id": 441992716,
-                    "text": final_response,
-                }
-        if final_response != "":
-            self.message_publisher.publish("user.message.processed", json.dumps(payload))
-        #save research results to file
+            context = message.get("context_to_forward", "cosa vuol dire flamingo?")
+            try:
+                prompt = self.prompts.get_web_search_prompt().format(context)
+            except KeyError as e:
+                print(f"Error retrieving prompt: {e}")
+                return "Error retrieving prompt"
+            
+            search_query = self.qwery_llm(prompt,"")
+            query = search_query.get("query", "cosa vuol dire flamingo?")
+            
+            self.message_publisher.publish("WebAgent.log.info", f"Search query: {query}")
+            
+            research_results = self.web_research_integration.research_topic(query, num_sources=5)
+            
+            useful_results = []
+            for result in research_results["sources"]:
+                content = result["content"]
+                prompt = self.prompts.get_content_filtering_prompt().format(context, content)
+                is_content_useful = self.qwery_llm(prompt, "").get("is_useful", False)
+                if content and is_content_useful:
+                    useful_results.append(content)
+            
+            if not useful_results:
+                self.message_publisher.publish("WebAgent.log.info", "No useful results found.")
+                payload = {
+                        "chat_id": 441992716,
+                        "text": "No useful results found for the query.",
+                    }
+                self.message_publisher.publish("user.message.processed", payload)
+            
+            summary_prompt = self.prompts.get_web_analysis_prompt().format(context, useful_results)
+            
+            final_response = self.qwery_llm(summary_prompt, "").get("answer", "")
+            print(f"Final response: {final_response}")
+            payload = {
+                        "chat_id": 441992716,
+                        "text": final_response,
+                    }
+            if final_response != "":
+                self.message_publisher.publish("user.message.processed", payload)
+        except Exception as e:
+            traceback.print_exc()
+            print(f"Error processing request: {e}")
+            self.message_publisher.publish("WebAgent.log.error", f"Error processing request: {e}")
         
     
 if __name__ == "__main__":

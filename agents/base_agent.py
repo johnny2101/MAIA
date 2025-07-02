@@ -130,7 +130,7 @@ class BaseAgent(ABC):
             method, properties, body = kwargs['method'], kwargs['properties'], kwargs['body']
             
             # Converte il messaggio in formato standard
-            message = body.decode('utf-8')
+            message = body
             while type(message) is not dict:
                 message = json.loads(message)
     
@@ -173,7 +173,7 @@ class BaseAgent(ABC):
             
         return max_confidence
     
-    def qwery_llm(self, system_prompt:str, message: str) -> AgentResponse:
+    def qwery_llm(self, system_prompt:str, message: str) -> Dict[str, Any]:
         """
         Interroga il modello LLM per ottenere una risposta.
         
@@ -190,14 +190,17 @@ class BaseAgent(ABC):
             #save response data to file
             with open("response_data.json", "w") as file:
                 json.dump(response, file, indent=4)
-            return response
+            return json.loads(response)
         except Exception as e:
             print(f"Errore nell'interrogazione del modello LLM: {e}")
             self.message_publisher.publish(
                 f"{self.agent_name}.logger.error",
                 f"Errore nell'interrogazione del modello LLM: {e}"
             )
-            return ""
+            return {
+                "success": False,
+                "content": "",
+                }
         
     def _calculate_capability_confidence(self, message: Message, capability: AgentCapability) -> float:
         """

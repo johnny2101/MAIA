@@ -44,9 +44,7 @@ def listen_to_user_messages():
         if stop_event.is_set():
             ch.stop_consuming()
             return
-        payload = body.decode()
-        payload = json.loads(body.decode())
-        payload = json.loads(payload)
+        payload = body
         message_publisher.publish("Bot.log.info", payload)
         chat_id = payload.get("chat_id")
         response_text = payload.get("text", "no message found")
@@ -79,8 +77,8 @@ def handle_text_message(message):
         'chat_id': message.chat.id,
         'text': message.text
     }
-    print(f"Received message: {payload}")
-    message_publisher.publish(input_topic, json.dumps(payload))
+    message_publisher.publish("Bot.log.info", payload)
+    message_publisher.publish(input_topic, payload)
     #message_publisher.publish("Bot.log.info", json.dumps(payload))
     
 

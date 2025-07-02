@@ -77,16 +77,17 @@ class MessagePublisher:
                 durable=True
             )
             
-            
+            print(f"Publisher connected to RabbitMQ at {self._config.get('host', 'localhost')}:{self._config.get('port', 5672)}", "MessagePublisher")
             logger.info(f"Publisher connected to RabbitMQ at {self._config.get('host', 'localhost')}:{self._config.get('port', 5672)}", "MessagePublisher")
             return True
         
         except AMQPConnectionError as e:
+            print(f"Failed to connect publisher to RabbitMQ: {e}", "MessagePublisher")
             logger.error(f"Failed to connect publisher to RabbitMQ: {e}", "MessagePublisher")
             return False
         
         except Exception as e:
-            
+            print(f"Unexpected error connecting to RabbitMQ: {e}", "MessagePublisher")
             logger.error(f"Unexpected error connecting to RabbitMQ: {e}", "MessagePublisher")
             return False
 
@@ -133,7 +134,10 @@ class MessagePublisher:
             return True
         
         try:
-            self.disconnect()
+            try:
+                self.disconnect()
+            except Exception as e:
+                pass
             return self.connect()
         except Exception as e:
             
@@ -152,14 +156,12 @@ class MessagePublisher:
             True se la pubblicazione ha avuto successo
         """
         if not self._ensure_connection():
-            
             logger.error("Publisher: Failed to ensure connection", "MessagePublisher")
             return False
         
         try:
             # Prepara il corpo del messaggio
             message_body = json.dumps(message)
-            print(f"Publishing message to {topic}: {message}", "MessagePublisher")
             
             # Pubblica il messaggio
             self._channel.basic_publish(
@@ -392,12 +394,12 @@ class MessageConsumer:
                 # Decodifica il corpo del messaggio
                 message = json.loads(body.decode('utf-8'))
                 # Chiama il callback originale
-                callback(ch=ch, method=method, properties=properties, body=body)
+                callback(ch=ch, method=method, properties=properties, body=message)
             except json.JSONDecodeError as e:
                 print(f"Error decoding message: {e}", "MessageConsumer")
                 logger.error(f"Failed to decode message: {e}", "MessageConsumer")
             except Exception as e:
-                print(f"Error in message callback: {e}", "MessageConsumer")
+                traceback.print_exc()
                 logger.error(f"Error in message callback: {e}", "MessageConsumer")
                 
         # Imposta il consumatore per la coda
@@ -407,7 +409,7 @@ class MessageConsumer:
                 on_message_callback=message_callback,
                 auto_ack=True
             )
-            print(f"Consumer set up for queue {queue_name} on topic {topic}", "MessageConsumer2")
+            #print(f"Consumer set up for queue {queue_name} on topic {topic}", "MessageConsumer2")
             # Avvia il consumo se non è già attivo
             if not self._consuming:
                 self._start_consuming()

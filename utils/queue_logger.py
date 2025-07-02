@@ -103,7 +103,6 @@ class QueueLogger:
         print("QueueLogger: Subscribing to messages...")
 
         def log_everything(**kwargs):
-            print("QueueLogger: Received a message")
             try:
                 method, properties, body = kwargs['method'], kwargs['properties'], kwargs['body']
             except KeyError as e:
@@ -112,7 +111,7 @@ class QueueLogger:
             try:
                 sender = method.routing_key.split('.')[0]
                 severity = method.routing_key.split('.')[-1]
-                message = body.decode()
+                message = body
 
                 if severity == 'debug':
                     self.debug(sender, message)

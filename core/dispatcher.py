@@ -3,7 +3,6 @@ import json
 from typing import Dict, List, Any, Tuple
 from integrations.gemma import Google_Gemini_Integration
 from data.prompts.dispatcher_prompts import DispatcherPrompts
-from core.message_broker2 import MessageBroker
 from core.message_broker import MessageConsumer, MessagePublisher
 
 class Dispatcher:
@@ -51,24 +50,15 @@ class Dispatcher:
                     ch.stop_consuming()
                     return
                 
-                payload = json.loads(body.decode())
-                payload = json.loads(payload)
+                payload: Dict[str, Any] = body
                 chat_id = payload.get("chat_id")
                 response_text = payload.get("text", "no message found")
                 response = self.analyze_request(response_text)
                 
                 selected_agents = self.route_request(response)
                 
-                #self._message_publisher.publish("dispatcher.log.info", f"Selected agents: {selected_agents}")
+                self._message_publisher.publish("dispatcher.log.info", f"Selected agents: {selected_agents}")
                 self._message_publisher.publish(f"agent.{selected_agents}.request", response)
-                
-                
-                payload = {
-                    "chat_id": chat_id,
-                    "text": response,
-                }
-                
-                self._message_publisher.publish("user.message.processed", json.dumps(payload))
 
         try:
             self._message_consumer.subscribe(topic, user_message_callback)
@@ -88,8 +78,9 @@ class Dispatcher:
 
     def analyze_request(self, message: Dict[str, Any]) -> Dict[str, Any]:
         response = self._gemini.send_message_with_system_instruction(self._prompts, message)
+        response = json.loads(response)
         self._message_publisher.publish("dispatcher.log.info", response)
-        return json.loads(response)
+        return response
 
     def detect_intent(self, message: Dict[str, Any]) -> str:
         pass

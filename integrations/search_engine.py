@@ -197,15 +197,15 @@ class WebResearchAssistant:
             print(f"Ricerca in corso per: {topic}")
             
             # 1. Cerca risultati
-            #search_results = self.search_api.search(topic, num_sources)
-            search_results = [
+            search_results = self.search_api.search(topic, num_sources)
+            '''search_results = [
                 {
                     "title": "How to make “cremina” for your homemade Italian espresso coffee ...",
                     "url": "https://wherethefoodiesgo.com/how-to-make-cremina-for-your-homemade-italian-espresso-coffee-and-a-few-rules-for-a-perfect-coffee-with-your-moka-pot/",
                     "content": "How do I make a homemade espresso with la cremina , like the one they serve you at the bar? Extremely easy! Put some sugar in a glass (or cup or wherever it’s easy for you to stir!); When the coffee comes out of the moka pot (we call it the “first” coffee), pour a few drops in the sugar; then stir with a teaspoon until it gets like a yellowish cream; …and your cremina is ready! Now put it in your homemade espresso coffee…and enjoy! 😉 Do you know the simple rules to make a good moka pot coffee? 1. Don’t put to much coffee powder in the pot and don’t press! 2. Turn off the burner as soon as watery coffee starts to come out (when the coffee coming out is not sticking to the sides of the “tower” anymore)! 3. Never wash your moka pot with soap! Do you want to surprise your friends and make a lemon flavoured coffee ? CLICK HERE to learn how to make it! Copyright © Where The Foodies Go. All Rights Reserved. Liked it? Share it! Click to share on Facebook (Opens in new window) Facebook Click to share on Pinterest (Opens in new window) Pinterest Click to share on X (Opens in new window) X Click to share on WhatsApp (Opens in new window) WhatsApp More Click to share on LinkedIn (Opens in new window) LinkedIn Click to share on Reddit (Opens in new window) Reddit Click to share on Tumblr (Opens in new window) Tumblr Click to email a link to a friend (Opens in new window) Email Like this: Like Loading... 10 comments Amazing.Really appreciated your article and also inspiring on How to make “cremina” for your homemade Italian espresso coffee! (and a few rules for a perfect coffee with your moka pot). Loading... Reply We’re really happy you appreciated it! Thank you for stopping by our blog! 😊 Loading... Reply Fantastic! I have always wanted to know how to make this, keep up the good work 🙂 Loading... Reply We’re happy to help! 😉 Thank you for stopping by! Loading... Reply Yes yes oh yes. I love coffee, love “Cremina” and the coffee shops that serve coffee that way. Thank you. Mystery solved. :0) Loading... Reply I’m “cremina” addicted! 😉 Very nice to meet you! Alessia Loading... Reply one more tip I’ve learned from my Italian friends…gently stir the coffee with a small spoon around the center post before pouring Loading... Reply my heart accelerates just reading the “how to” Loading... Reply Molto ben spiegato il metodo, miei complimenti Loading... Reply Grazie! 🙂 Loading... Reply Leave a Reply Cancel reply This site uses Akismet to reduce spam. Learn how your comment data is processed.",
                     "snippet": "Sep 7, 2014 ... Do you know the simple rules to make a good moka pot coffee? 1. Don't put to much coffee powder in the pot and don't press! 2. Turn off the ..."
                 }
-            ]
+            ]'''
             
             # 2. Scraping dei contenuti
             scraped_content = []
