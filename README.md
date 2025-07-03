@@ -1,4 +1,4 @@
-# MAIA - Multi-Agent Intelligent Assistant
+# MAIA - Modular Artificial Intelligent Assistant
 
 MAIA is a multi-agent conversational AI system designed to handle complex user requests through specialized agents. Built with a modular architecture, MAIA can intelligently route conversations to appropriate specialized agents while maintaining context and providing seamless user experiences.
 
@@ -42,37 +42,6 @@ Performs web searches and provides information from various sources.
 - "Search for the latest news about AI"
 - "What is the capital of Australia?"
 
-## 🔧 Adding New Agents
-
-To add a new specialized agent:
-
-1. **Create the agent directory**
-   ```bash
-   mkdir agents/your_agent_name
-   ```
-
-2. **Implement the agent class**
-   ```python
-   # agents/your_agent_name/your_agent.py
-   from agents.base_agent import BaseAgent
-   
-   class YourAgent(BaseAgent):
-       def __init__(self):
-           super().__init__("your_agent", "Description of your agent")
-       
-       async def process_request(self, message, context):
-           # Your agent logic here
-           return response
-   ```
-
-3. **Register the agent**
-   Add your agent to the agent registry in `core/agent_manager.py`
-
-4. **Add prompt templates**
-   Create specific prompts in `data/prompts/specialized_prompts/your_agent_prompts.py`
-
-See `docs/agent_development.md` for detailed guidance.
-
 ## 📊 Monitoring and Logging
 
 MAIA includes comprehensive logging and monitoring:
@@ -88,21 +57,13 @@ Logs are stored in the `logs/` directory and can be configured in `utils/logger.
 
 MAIA supports horizontal scaling:
 
-- **API Servers**: Multiple FastAPI instances behind a load balancer
-- **Worker Processes**: Scale Celery workers based on load
-- **Database**: PostgreSQL with read replicas
 - **Message Broker**: RabbitMQ cluster for high availability
 
 ## 📋 Requirements
 
 ### Core Dependencies
-
-- **FastAPI**: Web framework for building APIs
-- **Uvicorn**: ASGI server for FastAPI
 - **Pydantic**: Data validation and settings management
-- **SQLAlchemy**: SQL toolkit and ORM
 - **RabbitMQ**: Message broker and caching
-- **Celery**: Distributed task queue
 - **LangChain**: Framework for LLM applications
 - **Google Generative AI**: Google Gemini API client
 
